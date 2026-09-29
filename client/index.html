@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Turbo Fútbol 2D</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+    { "imports": { "planck": "/vendor/planck.mjs" } }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <canvas id="game" width="1024" height="384"></canvas>
+
+    <!-- Pantalla de carga -->
+    <section class="screen active" id="screen-loading">
+      <h1 class="logo">TURBO <span>FÚTBOL</span> 2D</h1>
+      <div class="bar"><div class="bar-fill" id="load-fill"></div></div>
+      <p class="muted" id="load-text">Cargando…</p>
+    </section>
+
+    <!-- Menú principal -->
+    <section class="screen" id="screen-menu">
+      <h1 class="logo">TURBO <span>FÚTBOL</span> 2D</h1>
+      <div class="menu-buttons">
+        <button class="btn big" data-action="mode-1p">1 jugador <small>contra la IA</small></button>
+        <button class="btn big" data-action="mode-2p">2 jugadores <small>mismo teclado</small></button>
+        <button class="btn big accent" data-action="mode-online">Online <small>cada uno desde su casa</small></button>
+      </div>
+      <p class="muted controls-hint">P1: A/D mover · W saltar · Espacio turbo · S frenar &nbsp;|&nbsp; P2: ←/→ · ↑ saltar · Enter turbo · ↓ frenar</p>
+    </section>
+
+    <!-- Online: crear o unirse -->
+    <section class="screen" id="screen-online">
+      <h2>Jugar online</h2>
+      <label class="field">Tu nombre
+        <input id="online-name" maxlength="16" placeholder="Jugador" autocomplete="off">
+      </label>
+      <div class="online-grid">
+        <div class="card">
+          <h3>Crear sala</h3>
+          <p class="muted">Crea una sala y pásale el código a tu amigo.</p>
+          <button class="btn accent" data-action="create-room">Crear sala</button>
+        </div>
+        <div class="card">
+          <h3>Unirse a una sala</h3>
+          <input id="join-code" class="code-input" maxlength="4" placeholder="CÓDIGO" autocomplete="off">
+          <button class="btn" data-action="join-room">Unirse</button>
+        </div>
+      </div>
+      <p class="error" id="online-error"></p>
+      <button class="btn ghost" data-action="back-menu">← Volver</button>
+    </section>
+
+    <!-- Sala esperando rival -->
+    <section class="screen" id="screen-lobby">
+      <h2>Sala creada</h2>
+      <p class="muted">Comparte este código con tu rival:</p>
+      <div class="room-code" id="lobby-code">----</div>
+      <button class="btn small" data-action="copy-code">Copiar código</button>
+      <p class="waiting"><span class="spinner"></span> <span id="lobby-status">Esperando a que se una otro jugador…</span></p>
+      <button class="btn ghost" data-action="leave-room">Salir de la sala</button>
+    </section>
+
+    <!-- Garaje -->
+    <section class="screen" id="screen-garage">
+      <div class="garage-head">
+        <h2>Garaje</h2>
+        <span class="muted" id="garage-sub"></span>
+      </div>
+      <div class="garage" id="garage-panels"></div>
+      <p class="muted" id="garage-status"></p>
+      <button class="btn ghost" data-action="garage-back">← Salir</button>
+    </section>
+
+    <!-- Resultado -->
+    <section class="screen overlay" id="screen-result">
+      <h2 id="result-title">¡Fin del partido!</h2>
+      <div class="result-score" id="result-score">0 - 0</div>
+      <p class="muted" id="result-status"></p>
+      <div class="menu-buttons row">
+        <button class="btn accent" data-action="rematch">Revancha</button>
+        <button class="btn ghost" data-action="to-menu">Menú principal</button>
+      </div>
+    </section>
+
+    <!-- Aviso flotante -->
+    <div class="toast" id="toast"></div>
+    <button class="btn ghost small pause-btn" id="exit-btn" data-action="exit-match" hidden>Salir</button>
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
