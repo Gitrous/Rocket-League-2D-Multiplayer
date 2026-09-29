@@ -606,6 +606,10 @@ $('#join-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') join
 $('#join-code').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && app.running) actions['exit-match']();
+  if (e.code === 'KeyH' && app.running) {
+    renderer.showHitboxes = !renderer.showHitboxes;
+    toast(renderer.showHitboxes ? 'Hitbox visible (H para ocultar)' : 'Hitbox oculta', 1400);
+  }
 });
 
 boot();

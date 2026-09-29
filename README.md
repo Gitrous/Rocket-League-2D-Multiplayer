@@ -20,6 +20,7 @@ Se puede jugar contra la IA, a dos en el mismo teclado u **online, cada uno desd
 | Turbo | Espacio o Shift izq. | Enter, Shift der. o Numpad 0 |
 | Frenar | S | ↓ |
 | Salir de la partida | Esc | Esc |
+| Ver la hitbox (contorno con el que choca) | H | H |
 
 Reglas: partidos de 3 minutos; si hay empate, prórroga con gol de oro.
 

@@ -124,8 +124,8 @@ export function drawCar(ctx, { x, y, a = 0, f = 1, wheelAngle = 0, loadout, team
     ctx.fillRect(-24, 1, 40, 2);
   }
 
-  drawWheel(ctx, -CAR.wheelOffsetX, CAR.wheelOffsetY - 2, wheelAngle, loadout.wheels, color);
-  drawWheel(ctx, CAR.wheelOffsetX, CAR.wheelOffsetY - 2, wheelAngle, loadout.wheels, color);
+  drawWheel(ctx, -CAR.wheelOffsetX, CAR.wheelOffsetY, wheelAngle, loadout.wheels, color);
+  drawWheel(ctx, CAR.wheelOffsetX, CAR.wheelOffsetY, wheelAngle, loadout.wheels, color);
   ctx.restore();
 }
 
@@ -155,6 +155,7 @@ export class Renderer {
     this.background = this._buildBackground();
     this.crowd = this._buildCrowd();
     this.flash = null; // { text, color, t }
+    this.showHitboxes = false;
   }
 
   reset() {
@@ -354,6 +355,7 @@ export class Renderer {
     });
 
     if (state.ball) this._drawBall(ctx, state.ball);
+    if (this.showHitboxes) this._drawHitboxes(ctx, state);
 
     // marcadores sobre los coches (nombre)
     ctx.font = 'bold 11px system-ui, sans-serif';
@@ -371,6 +373,32 @@ export class Renderer {
 
     ctx.restore();
     this._drawHud(ctx, state, info, dt);
+  }
+
+  // Contorno físico real (lo que choca), para ajustar y aprender a golpear la pelota.
+  _drawHitboxes(ctx, state) {
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#39ff88';
+    ctx.fillStyle = '#39ff8822';
+    for (const car of state.cars) {
+      ctx.save();
+      ctx.translate(car.x, car.y);
+      ctx.rotate(car.a);
+      ctx.beginPath();
+      CAR.shape.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+    if (state.ball) {
+      ctx.beginPath();
+      ctx.arc(state.ball.x, state.ball.y, BALL.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   _drawCrowd(ctx) {

@@ -65,7 +65,8 @@ export class Match {
     this._buildArena();
     this.cars = [0, 1].map((slot) => this._createCar(slot));
     this.ball = null;
-    this._lastHitTick = -99;
+    this._lastHitTick = [-99, -99];
+    this._pendingHits = [];
 
     this.world.on('begin-contact', (c) => this._onContact(c));
     this._startKickoff();
@@ -117,6 +118,7 @@ export class Match {
     });
     b.setLinearDamping(BALL.linearDamping);
     b.setAngularDamping(BALL.angularDamping);
+    b.setGravityScale(BALL.gravityScale);
     b.setUserData({ kind: 'ball' });
     this.ball = b;
   }
@@ -124,7 +126,7 @@ export class Match {
   _resetCars() {
     for (const car of this.cars) {
       const x = car.slot === 0 ? CAR.spawnX : WIDTH - CAR.spawnX;
-      car.body.setTransform(Vec2(m(x), m(ARENA.floorY - 10)), 0);
+      car.body.setTransform(Vec2(m(x), m(ARENA.floorY - CAR.spawnHeight)), 0);
       car.body.setLinearVelocity(Vec2(0, 0));
       car.body.setAngularVelocity(0);
       car.facing = car.slot === 0 ? 1 : -1;
@@ -191,6 +193,7 @@ export class Match {
     }
 
     this.world.step(DT, 8, 3);
+    this._applyHits();
 
     if (this.ball) this._clampBall();
     if (this.phase === 'play') this._checkGoal();
@@ -253,7 +256,7 @@ export class Match {
   _resetCarsKeepFacing() {
     for (const car of this.cars) {
       const x = car.slot === 0 ? CAR.spawnX : WIDTH - CAR.spawnX;
-      car.body.setTransform(Vec2(m(x), m(ARENA.floorY - 10)), 0);
+      car.body.setTransform(Vec2(m(x), m(ARENA.floorY - CAR.spawnHeight)), 0);
       car.body.setLinearVelocity(Vec2(0, 0));
       car.body.setAngularVelocity(0);
       car.grounded = true;
@@ -266,7 +269,7 @@ export class Match {
     const down = b.getWorldVector(Vec2(0, 1));
     let hit = false;
     for (const sx of [-CAR.wheelOffsetX, CAR.wheelOffsetX]) {
-      const from = b.getWorldPoint(Vec2(m(sx), m(CAR.wheelOffsetY - 2)));
+      const from = b.getWorldPoint(Vec2(m(sx), m(CAR.wheelOffsetY)));
       const to = Vec2(from.x + down.x * m(CAR.groundRay), from.y + down.y * m(CAR.groundRay));
       this.world.rayCast(from, to, (fixture, point, normal, fraction) => {
         const body = fixture.getBody();
@@ -417,13 +420,38 @@ export class Match {
     const ka = a.getUserData()?.kind;
     const kb = b.getUserData()?.kind;
     if (!((ka === 'ball' && kb === 'car') || (ka === 'car' && kb === 'ball'))) return;
-    if (this.tick - this._lastHitTick < 6) return;
-    this._lastHitTick = this.tick;
     const car = ka === 'car' ? a : b;
-    const ball = ka === 'ball' ? a : b;
-    const va = car.getLinearVelocity();
-    const vb = ball.getLinearVelocity();
-    const rel = Math.hypot(va.x - vb.x, va.y - vb.y);
-    this.events.push({ type: 'hit', slot: car.getUserData().slot, power: Math.min(1, rel / 15) });
+    const slot = car.getUserData().slot;
+    if (this.tick - this._lastHitTick[slot] < 6) return;
+    this._lastHitTick[slot] = this.tick;
+    // no se pueden aplicar impulsos durante el paso de física: se aplican justo después
+    this._pendingHits.push({ car, slot });
   }
+
+  // Golpe "con chispa": además del choque físico, empuja la pelota desde el coche y un poco hacia arriba.
+  _applyHits() {
+    const hits = this._pendingHits;
+    this._pendingHits = [];
+    for (const { car, slot } of hits) {
+      const ball = this.ball;
+      if (!ball) continue;
+      const cp = car.getPosition();
+      const bp = ball.getPosition();
+      let dx = bp.x - cp.x;
+      let dy = bp.y - cp.y;
+      let d = Math.hypot(dx, dy) || 1;
+      dx /= d; dy /= d;
+      const vc = car.getLinearVelocity();
+      const vb = ball.getLinearVelocity();
+      const closing = Math.max(0, (vc.x - vb.x) * dx + (vc.y - vb.y) * dy);
+      dy -= BALL.hitLift;
+      d = Math.hypot(dx, dy) || 1;
+      dx /= d; dy /= d;
+      const dv = Math.min(BALL.hitMax, BALL.hitBase + closing * BALL.hitScale);
+      const imp = dv * ball.getMass();
+      ball.applyLinearImpulse(Vec2(dx * imp, dy * imp), ball.getWorldCenter(), true);
+      this.events.push({ type: 'hit', slot, power: Math.min(1, closing / 12) });
+    }
+  }
+
 }

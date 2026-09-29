@@ -31,37 +31,45 @@ export const MATCH = {
 
 export const BALL = {
   radius: 16,
-  density: 0.35,
-  restitution: 0.62,
+  density: 0.2,
+  restitution: 0.66,
   friction: 0.3,
-  linearDamping: 0.12,
+  linearDamping: 0.03,
+  gravityScale: 0.6,   // la pelota cae más despacio que los coches (más fácil hacer aéreas)
   angularDamping: 0.3,
   maxSpeed: 26,        // m/s
+  // impulso extra al tocarla con el coche: base + parte de la velocidad de choque, con sesgo hacia arriba
+  hitBase: 1.6,
+  hitScale: 0.45,
+  hitMax: 8,
+  hitLift: 0.35,
 };
 
 // Tipos de coche: cambian el comportamiento físico, no el aspecto.
 export const CAR_TYPES = [
-  { id: 'agil',        name: 'Ágil',        density: 0.8, maxSpeed: 9.5, accel: 20, airRot: 6.2, jump: 8.4, boostAccel: 23 },
-  { id: 'equilibrado', name: 'Equilibrado', density: 1.0, maxSpeed: 9.0, accel: 18, airRot: 5.2, jump: 8.0, boostAccel: 22 },
-  { id: 'pesado',      name: 'Pesado',      density: 1.4, maxSpeed: 8.3, accel: 16, airRot: 4.2, jump: 7.6, boostAccel: 21 },
+  { id: 'agil',        name: 'Ágil',        density: 0.8, maxSpeed: 9.5, accel: 20, airRot: 6.2, jump: 8.4, boostAccel: 35 },
+  { id: 'equilibrado', name: 'Equilibrado', density: 1.0, maxSpeed: 9.0, accel: 18, airRot: 5.2, jump: 8.0, boostAccel: 34 },
+  { id: 'pesado',      name: 'Pesado',      density: 1.4, maxSpeed: 8.3, accel: 16, airRot: 4.2, jump: 7.6, boostAccel: 32 },
 ];
 
 export const CAR = {
-  // polígono convexo y simétrico (px, relativo al centro). y hacia abajo.
-  shape: [[-31, 9], [31, 9], [32, 1], [24, -9], [-24, -9], [-32, 1]],
+  // hitbox: polígono convexo y simétrico (px, relativo al centro, y hacia abajo) que cubre
+  // la carrocería, la cabina y las ruedas del dibujo. El morro y la cola están biselados.
+  shape: [[-32, 12], [32, 12], [34, 3], [27, -7], [12, -14], [-12, -14], [-27, -7], [-34, 3]],
   friction: 0.12,
   restitution: 0.05,
   linearDamping: 0.08,
   angularDamping: 1.5,
   wheelOffsetX: 20,
-  wheelOffsetY: 9,
+  wheelOffsetY: 5,        // centro de las ruedas; con radio 7 tocan el borde inferior de la hitbox
   wheelRadius: 7,
-  groundRay: 9,            // px de rayo hacia "abajo" local para saber si toca suelo
+  groundRay: 12,           // px de rayo desde el centro de la rueda hacia "abajo" para saber si toca suelo
   brakeDecel: 26,
   coastDecel: 3.5,
   stickAccel: 7,            // pega el coche a paredes/techo cuando va por ellas
   boostMaxSpeed: 15,
-  airBoostMaxSpeed: 13,
+  airBoostMaxSpeed: 16,
+  spawnHeight: 13,         // altura del centro del coche sobre el suelo en el saque
   secondJump: 6.2,
   flipImpulse: 6.5,
   flipSpin: 13,
