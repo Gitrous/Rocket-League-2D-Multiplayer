@@ -37,6 +37,14 @@ npm start
 
 Abre <http://localhost:3000>. Otros puertos: `PORT=8080 npm start`.
 
+## En GitHub Codespaces
+
+Crea un codespace desde esta rama (botón **Code → Codespaces → Create codespace**). Al abrirse instala
+las dependencias y arranca el juego solo; se abre una pestaña con el puerto **3000**.
+
+Para que un amigo se una: pestaña **Puertos** (Ports) → clic derecho en el 3000 → **Visibilidad del
+puerto → Pública**, y pásale esa dirección. Si el juego no arrancó, ejecuta `npm start` en la terminal.
+
 ## Jugar online desde casas distintas
 
 El servidor (`npm start`) tiene que estar en un sitio al que lleguen los dos jugadores. Opciones:
