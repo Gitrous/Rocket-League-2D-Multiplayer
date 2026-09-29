@@ -13,11 +13,11 @@ export const HEIGHT = 384;
 export const ARENA = {
   floorY: 352,
   ceilingY: 20,
-  leftWallX: 64,
-  rightWallX: 960,
-  goalTopY: 236,      // larguero: la portería va desde aquí hasta el suelo
-  goalBackLeft: 12,
-  goalBackRight: 1012,
+  leftWallX: 90,
+  rightWallX: 934,
+  goalTopY: 216,      // larguero: la portería va desde aquí hasta el suelo
+  goalBackLeft: 8,    // fondo de 82 px: cabe la pelota entera (64 px de diámetro)
+  goalBackRight: 1016,
   cornerRadius: 70,   // esquinas superiores curvas
 };
 
@@ -30,12 +30,12 @@ export const MATCH = {
 };
 
 export const BALL = {
-  radius: 16,
-  density: 0.2,
-  restitution: 0.66,
+  radius: 32,
+  density: 0.1,        // con el doble de radio pesa ~2 veces más que antes (0,31 kg frente a 0,16)
+  restitution: 0.62,
   friction: 0.3,
-  linearDamping: 0.03,
-  gravityScale: 0.6,   // la pelota cae más despacio que los coches (más fácil hacer aéreas)
+  linearDamping: 0.06,
+  gravityScale: 0.8,   // cae algo más despacio que los coches, sin llegar a flotar
   angularDamping: 0.3,
   maxSpeed: 26,        // m/s
   // impulso extra al tocarla con el coche: base + parte de la velocidad de choque, con sesgo hacia arriba
@@ -76,7 +76,7 @@ export const CAR = {
   secondJumpWindow: 1.4,    // segundos tras despegar para el doble salto
   boostDrain: 34,           // por segundo
   boostRegen: 7,            // por segundo
-  spawnX: 150,
+  spawnX: 170,
 };
 
 // Opciones del garaje (puramente estéticas salvo "type")

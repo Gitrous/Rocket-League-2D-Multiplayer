@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Vec2 } from 'planck';
 import { Match } from '../shared/game.js';
 import { Bot } from '../shared/ai.js';
-import { PPM, ARENA, MATCH, CAR } from '../shared/config.js';
+import { PPM, ARENA, MATCH, CAR, BALL } from '../shared/config.js';
 
 function run(match, ticks, inputs = () => [{}, {}]) {
   const events = [];
@@ -21,7 +21,7 @@ test('la cuenta atrás mantiene los coches quietos y luego empieza el juego', ()
   const match = new Match();
   run(match, 60, () => [{ h: 1, boost: true }, { h: -1 }]);
   assert.equal(match.phase, 'countdown');
-  assert.equal(Math.round(match.snapshot().cars[0].x), 150);
+  assert.equal(Math.round(match.snapshot().cars[0].x), CAR.spawnX);
   run(match, MATCH.countdown * 60 + 5);
   assert.equal(match.phase, 'play');
 });
@@ -40,7 +40,7 @@ test('acelerar mueve el coche y el salto lo despega del suelo', () => {
 test('meter la pelota en la portería suma un gol y reinicia el saque', () => {
   const match = new Match();
   run(match, MATCH.countdown * 60 + 2);
-  match.ball.setTransform(Vec2((ARENA.rightWallX + 30) / PPM, (ARENA.floorY - 30) / PPM), 0);
+  match.ball.setTransform(Vec2((ARENA.rightWallX + BALL.radius + 8) / PPM, (ARENA.floorY - BALL.radius - 4) / PPM), 0);
   const events = run(match, 2);
   assert.ok(events.some((e) => e.type === 'goal' && e.scorer === 0));
   assert.deepEqual(match.score, [1, 0]);
@@ -64,7 +64,7 @@ test('con empate al final hay prórroga con gol de oro', () => {
   run(match, MATCH.countdown * 60 + 70);
   assert.equal(match.phase, 'play');
   assert.equal(match.overtime, true);
-  match.ball.setTransform(Vec2((ARENA.leftWallX - 30) / PPM, (ARENA.floorY - 30) / PPM), 0);
+  match.ball.setTransform(Vec2((ARENA.leftWallX - BALL.radius - 8) / PPM, (ARENA.floorY - BALL.radius - 4) / PPM), 0);
   run(match, MATCH.goalPause * 60 + 5);
   assert.equal(match.phase, 'ended');
   assert.equal(match.winner, 1);

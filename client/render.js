@@ -425,12 +425,12 @@ export class Renderer {
     ctx.beginPath();
     for (let i = 0; i < 5; i++) {
       const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
-      ctx.lineTo(Math.cos(a) * 6, Math.sin(a) * 6);
+      ctx.lineTo(Math.cos(a) * r * 0.38, Math.sin(a) * r * 0.38);
     }
     ctx.closePath(); ctx.fill();
     for (let i = 0; i < 5; i++) {
       const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
-      ctx.beginPath(); ctx.arc(Math.cos(a) * 14, Math.sin(a) * 14, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(Math.cos(a) * r * 0.88, Math.sin(a) * r * 0.88, r * 0.25, 0, Math.PI * 2); ctx.fill();
     }
     ctx.restore();
     ctx.strokeStyle = '#ffffff';
