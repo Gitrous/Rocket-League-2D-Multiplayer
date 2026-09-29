@@ -23,6 +23,9 @@ Se puede jugar contra la IA, a dos en el mismo teclado u **online, cada uno desd
 
 Reglas: partidos de 3 minutos; si hay empate, prórroga con gol de oro.
 
+**Turbo infinito**: activado por defecto. Se desactiva con la casilla «Turbo infinito» del menú principal
+(se recuerda para la próxima vez). Online manda la opción de quien crea la sala.
+
 ## Ponerlo en marcha
 
 Necesitas [Node.js](https://nodejs.org) 18 o superior.

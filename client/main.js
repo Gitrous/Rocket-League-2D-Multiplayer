@@ -56,6 +56,7 @@ const store = {
 
 function savedLoadout() { return sanitizeLoadout(store.get('loadout', null), 0); }
 function savedName() { return sanitizeName(store.get('name', ''), ''); }
+function infiniteBoost() { return $('#opt-infinite-boost').checked; }
 
 // ---------- carga ----------
 
@@ -83,6 +84,8 @@ async function boot() {
     return;
   }
   $('#online-name').value = savedName();
+  $('#opt-infinite-boost').checked = store.get('infiniteBoost', true) !== false;
+  $('#opt-infinite-boost').addEventListener('change', (e) => store.set('infiniteBoost', e.target.checked));
   renderer.draw(null, { loadouts: app.loadouts }, 0);
   show('menu');
 }
@@ -221,14 +224,14 @@ function openLocal(mode) {
     openGarage([
       { slot: 0, title: () => `${app.names[0]} (tú)`, editable: true, readyButton: true },
       { slot: 1, title: () => 'IA (rival)', editable: false, readyButton: false },
-    ], '1 jugador · contra la IA');
+    ], `1 jugador · contra la IA · turbo ${infiniteBoost() ? 'infinito' : 'limitado'}`);
   } else {
     app.names = ['Jugador 1', 'Jugador 2'];
     app.loadouts[1] = sanitizeLoadout(store.get('loadout2', null), 1);
     openGarage([
       { slot: 0, title: () => 'Jugador 1 · A/D W Espacio', editable: true, readyButton: true },
       { slot: 1, title: () => 'Jugador 2 · ←/→ ↑ Enter', editable: true, readyButton: true },
-    ], '2 jugadores · mismo teclado');
+    ], `2 jugadores · mismo teclado · turbo ${infiniteBoost() ? 'infinito' : 'limitado'}`);
   }
 }
 
@@ -241,7 +244,7 @@ function randomLoadout(slot) {
 
 function startLocalMatch() {
   if (app.mode === '2p') store.set('loadout2', app.loadouts[1]);
-  const match = new Match({ loadouts: app.loadouts, names: app.names });
+  const match = new Match({ loadouts: app.loadouts, names: app.names, infiniteBoost: infiniteBoost() });
   app.running = {
     kind: 'local',
     match,
@@ -350,7 +353,7 @@ async function createRoom() {
   onlineError('');
   if (!(await ensureConnected())) return;
   app.mode = 'online';
-  net.send({ t: 'create', name: onlineName(), loadout: savedLoadout() });
+  net.send({ t: 'create', name: onlineName(), loadout: savedLoadout(), infiniteBoost: infiniteBoost() });
 }
 
 async function joinRoom() {
@@ -408,7 +411,7 @@ net.on('room', (room) => {
         editable: slot === app.you,
         readyButton: slot === app.you,
       }));
-      openGarage(panels, `Sala ${room.code} · online`);
+      openGarage(panels, `Sala ${room.code} · online · turbo ${room.infiniteBoost ? 'infinito' : 'limitado'}`);
     } else {
       refreshGarage();
     }

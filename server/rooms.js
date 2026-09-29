@@ -56,6 +56,7 @@ export class RoomManager {
     const room = {
       code,
       phase: 'lobby', // lobby → garage → playing → ended → garage ...
+      infiniteBoost: msg.infiniteBoost !== false, // lo decide quien crea la sala
       players: [null, null],
       match: null,
       loop: null,
@@ -133,6 +134,7 @@ export class RoomManager {
       loadouts: room.players.map((p) => p.loadout),
       names: room.players.map((p) => p.name),
       duration: this.matchDuration,
+      infiniteBoost: room.infiniteBoost,
     });
     for (const p of room.players) p.input = sanitizeInput(null);
     room.players.forEach((p, slot) => send(p.ws, {
@@ -141,6 +143,7 @@ export class RoomManager {
       loadouts: room.players.map((pl) => pl.loadout),
       names: room.players.map((pl) => pl.name),
       tickRate: this.tickRate,
+      infiniteBoost: room.infiniteBoost,
     }));
 
     let pending = [];
@@ -204,6 +207,7 @@ export class RoomManager {
       t: 'room',
       code: room.code,
       phase: room.phase,
+      infiniteBoost: room.infiniteBoost,
       players: room.players.map((p) => (p ? { name: p.name, loadout: p.loadout, ready: p.ready } : null)),
     };
   }

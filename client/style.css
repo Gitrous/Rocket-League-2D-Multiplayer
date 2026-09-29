@@ -103,6 +103,9 @@ h3 { font-size: 18px; margin-bottom: 6px; }
 .btn.small { padding: 6px 12px; font-size: 14px; }
 .btn.ready { background: #1f9d57; border-color: #43e08a; }
 
+.check { display: flex; align-items: center; gap: 10px; font-weight: 700; cursor: pointer; user-select: none; }
+.check input { width: 20px; height: 20px; accent-color: var(--orange); cursor: pointer; }
+
 .controls-hint { font-size: 13px; max-width: 700px; }
 
 .field { display: flex; flex-direction: column; gap: 6px; font-weight: 600; }

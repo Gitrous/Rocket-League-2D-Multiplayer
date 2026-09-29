@@ -42,6 +42,27 @@ test('sirve el juego y la librería de físicas', async () => {
   assert.equal((await fetch(`${base}/shared/../server/rooms.js`)).status, 404);
 });
 
+test('la sala usa la opción de turbo de quien la crea', async () => {
+  const a = client();
+  const b = client();
+  await Promise.all([a.open(), b.open()]);
+  a.send({ t: 'create', name: 'A', infiniteBoost: false });
+  const lobby = await a.next((m) => m.t === 'room');
+  assert.equal(lobby.infiniteBoost, false);
+  b.send({ t: 'join', code: lobby.code, name: 'B', infiniteBoost: true });
+  const g = await b.next((m) => m.t === 'room' && m.phase === 'garage');
+  assert.equal(g.infiniteBoost, false);
+  a.send({ t: 'ready', ready: true });
+  b.send({ t: 'ready', ready: true });
+  const start = await b.next((m) => m.t === 'start');
+  assert.equal(start.infiniteBoost, false);
+  const st = await b.next((m) => m.t === 'state');
+  assert.equal(st.s.infiniteBoost, false);
+  assert.equal(st.s.cars[0].bo, 33);
+  a.ws.close();
+  b.ws.close();
+});
+
 test('unirse a una sala que no existe da error', async () => {
   const c = client();
   await c.open();

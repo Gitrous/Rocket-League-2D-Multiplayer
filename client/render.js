@@ -458,11 +458,11 @@ export class Renderer {
       ctx.fillStyle = '#00000080';
       ctx.beginPath(); ctx.roundRect(x, y, 140, 12, 6); ctx.fill();
       ctx.fillStyle = TEAM_COLORS[i];
-      ctx.beginPath(); ctx.roundRect(x + 2, y + 2, 136 * (car.bo / 100), 8, 4); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(x + 2, y + 2, 136 * (state.infiniteBoost ? 1 : car.bo / 100), 8, 4); ctx.fill();
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 10px system-ui, sans-serif';
       ctx.textAlign = i === 0 ? 'left' : 'right';
-      ctx.fillText(`TURBO ${car.bo}`, i === 0 ? x : x + 140, y - 3);
+      ctx.fillText(state.infiniteBoost ? 'TURBO ∞' : `TURBO ${car.bo}`, i === 0 ? x : x + 140, y - 3);
     });
 
     // cuenta atrás

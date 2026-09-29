@@ -86,3 +86,15 @@ test('IA contra IA: la simulación es estable y hay goles', () => {
   }
   assert.ok(goals > 0);
 });
+
+test('el turbo es infinito por defecto y se gasta si se desactiva', () => {
+  const infinite = new Match();
+  const limited = new Match({ infiniteBoost: false });
+  for (const match of [infinite, limited]) run(match, MATCH.countdown * 60 + 2);
+  run(infinite, 120, () => [{ boost: true }, {}]);
+  run(limited, 120, () => [{ boost: true }, {}]);
+  assert.equal(infinite.snapshot().cars[0].bo, 100);
+  assert.equal(infinite.snapshot().infiniteBoost, true);
+  assert.equal(limited.snapshot().cars[0].bo, 0);
+  assert.equal(limited.snapshot().infiniteBoost, false);
+});

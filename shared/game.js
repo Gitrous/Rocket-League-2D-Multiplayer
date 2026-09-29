@@ -51,6 +51,7 @@ export class Match {
     this.loadouts = [sanitizeLoadout(opts.loadouts?.[0], 0), sanitizeLoadout(opts.loadouts?.[1], 1)];
     this.names = opts.names || ['Azul', 'Naranja'];
     this.duration = opts.duration ?? MATCH.duration;
+    this.infiniteBoost = opts.infiniteBoost !== false; // turbo infinito salvo que se desactive
 
     this.world = new World({ gravity: Vec2(0, 20) });
     this.tick = 0;
@@ -97,7 +98,7 @@ export class Match {
       body,
       facing: slot === 0 ? 1 : -1,
       grounded: false,
-      boost: MATCH.startBoost,
+      boost: this.infiniteBoost ? 100 : MATCH.startBoost,
       boosting: false,
       prevJump: false,
       airTime: 0,
@@ -127,7 +128,7 @@ export class Match {
       car.body.setLinearVelocity(Vec2(0, 0));
       car.body.setAngularVelocity(0);
       car.facing = car.slot === 0 ? 1 : -1;
-      car.boost = MATCH.startBoost;
+      car.boost = this.infiniteBoost ? 100 : MATCH.startBoost;
       car.usedSecondJump = false;
       car.flipTime = 0;
       car.airTime = 0;
@@ -214,6 +215,7 @@ export class Match {
       overtime: this.overtime,
       score: [...this.score],
       winner: this.winner,
+      infiniteBoost: this.infiniteBoost,
       cars: this.cars.map((c) => {
         const p = c.body.getPosition();
         const v = c.body.getLinearVelocity();
@@ -357,7 +359,7 @@ export class Match {
         const f = t.boostAccel * mass * dir;
         b.applyForceToCenter(Vec2(fwd.x * f, fwd.y * f), true);
       }
-      car.boost = Math.max(0, car.boost - CAR.boostDrain * DT);
+      if (!this.infiniteBoost) car.boost = Math.max(0, car.boost - CAR.boostDrain * DT);
       car.boosting = true;
     } else {
       car.boost = Math.min(100, car.boost + CAR.boostRegen * DT);
