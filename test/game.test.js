@@ -214,7 +214,7 @@ test('el doble salto no caduca aunque pases mucho tiempo en el aire', () => {
   assert.ok(events.some((e) => e.type === 'jump2' && e.slot === 0), 'el doble salto sigue disponible');
 });
 
-test('en el aire el giro es directo: gira mientras mantienes y se para al soltar', () => {
+test('en el aire el giro es directo: gira mientras mantienes y al soltar sigue un poco por inercia', () => {
   const match = readyMatch();
   const car = match.cars[0];
   const hold = (h, ticks) => {
@@ -230,7 +230,8 @@ test('en el aire el giro es directo: gira mientras mantienes y se para al soltar
   const max = CAR_TYPES[1].airRot;
   assert.ok(Math.abs(hold(-1, 30) + max) < max * 0.03, 'gira a la izquierda a tope');
   assert.ok(Math.abs(hold(1, 1) - max) < max * 0.03, 'al pulsar derecha gira a la derecha al momento');
-  assert.ok(Math.abs(hold(0, 12)) < 0.1, 'al soltar deja de girar');
+  assert.ok(Math.abs(hold(0, 3)) > max * 0.4, 'al soltar sigue girando un poco por inercia');
+  assert.ok(Math.abs(hold(0, 40)) < 0.1, 'y acaba parándose');
 });
 
 function airborne(match, x = 400, y = 150, angle = 0) {
