@@ -272,13 +272,19 @@ function stepLocal(dt) {
     match.step();
     const state = match.snapshot();
     for (const e of match.drainEvents()) handleEvent(e, state);
+    run.prevState = run.state;
     run.state = state;
     if (match.finished) {
       finishMatch(match.winner, match.score);
       return;
     }
   }
-  if (run.state) renderer.draw(run.state, run.info, dt);
+  // la física va a 60 Hz; se dibuja la mezcla de los dos últimos estados según el tiempo que falta
+  // para el siguiente paso, así el movimiento y el giro se ven suaves en cualquier monitor (120/144 Hz…)
+  if (run.state) {
+    const view = run.prevState ? interpolate(run.prevState, run.state, Math.min(1, run.acc / DT)) : run.state;
+    renderer.draw(view, run.info, dt);
+  }
   updateBoostSounds(run.state);
 }
 
