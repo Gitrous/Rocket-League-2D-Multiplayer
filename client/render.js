@@ -1,5 +1,5 @@
 // Dibujo del juego en canvas: estadio, coches, pelota, partículas y marcador. Todo con formas vectoriales propias.
-import { WIDTH, HEIGHT, ARENA, BALL, CAR, COLORS } from '/shared/config.js';
+import { WIDTH, HEIGHT, ARENA, BALL, CAR, COLORS, GAME_SPEED } from '/shared/config.js';
 import { arenaOutline } from '/shared/game.js';
 
 export const TEAM_COLORS = ['#2f7bff', '#ff8a1f'];
@@ -304,8 +304,8 @@ export class Renderer {
       const s = 120 + Math.random() * 120;
       this.particles.push({
         x, y,
-        vx: (dx + spread * -dy) * s + car.vx * 0.3,
-        vy: (dy + spread * dx) * s + car.vy * 0.3,
+        vx: (dx + spread * -dy) * s + car.vx * GAME_SPEED * 0.3,
+        vy: (dy + spread * dx) * s + car.vy * GAME_SPEED * 0.3,
         life: 0.25 + Math.random() * 0.25, max: 0.5, size: 3 + Math.random() * 3,
         color: trailColor(loadout.trail, this.time), g: loadout.trail === 3 ? -40 : 0,
       });
@@ -334,7 +334,7 @@ export class Renderer {
 
     // coches
     state.cars.forEach((car, i) => {
-      const fwdSpeed = car.vx * Math.cos(car.a) + car.vy * Math.sin(car.a);
+      const fwdSpeed = (car.vx * Math.cos(car.a) + car.vy * Math.sin(car.a)) * GAME_SPEED;
       if (car.g) this.wheelAngles[i] += (fwdSpeed * dt) / CAR.wheelRadius;
       if (car.b) this._emitBoost(car, info.loadouts[i]);
     });

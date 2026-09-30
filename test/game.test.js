@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Vec2 } from 'planck';
 import { Match } from '../shared/game.js';
 import { Bot } from '../shared/ai.js';
-import { PPM, ARENA, MATCH, CAR, BALL } from '../shared/config.js';
+import { PPM, ARENA, MATCH, CAR, BALL, GAME_SPEED } from '../shared/config.js';
 
 function run(match, ticks, inputs = () => [{}, {}]) {
   const events = [];
@@ -121,14 +121,25 @@ test('un salto debajo de la pelota la levanta alto (para aéreas)', () => {
   assert.ok(ARENA.floorY - top > 220, `la pelota solo subió ${Math.round(ARENA.floorY - top)} px`);
 });
 
+test('en cámara lenta todo va más despacio que a velocidad normal', () => {
+  assert.ok(GAME_SPEED < 0.8, 'el juego debe ir a cámara lenta');
+  const match = readyMatch();
+  const x0 = match.cars[0].body.getPosition().x * PPM;
+  run(match, 60, () => [{ h: 1, boost: true }, {}]); // 1 segundo real a tope con turbo
+  const moved = match.cars[0].body.getPosition().x * PPM - x0;
+  assert.ok(moved < 260, `en 1 s recorrió ${Math.round(moved)} px`);
+});
+
 test('con el morro arriba y turbo el coche puede volar alto', () => {
   const match = readyMatch();
   let top = 999;
-  for (let i = 0; i < 200; i++) {
+  // los tiempos se cuentan en ticks de física: con cámara lenta hacen falta más fotogramas
+  const S = 1 / GAME_SPEED;
+  for (let i = 0; i < 200 * S; i++) {
     const c = match.cars[0];
     const a = c.body.getAngle();
     const air = !c.grounded;
-    match.setInput(0, { jump: i < 4 || (i >= 12 && i < 15), h: air && a > -1.2 ? -1 : air && a < -1.6 ? 1 : 0, boost: i > 8 });
+    match.setInput(0, { jump: i < 4 * S || (i >= 12 * S && i < 15 * S), h: air && a > -1.2 ? -1 : air && a < -1.6 ? 1 : 0, boost: i > 8 * S });
     match.step();
     match.drainEvents();
     top = Math.min(top, c.body.getPosition().y * PPM);

@@ -4,6 +4,11 @@
 export const PPM = 32;
 export const TICK_RATE = 60;
 export const DT = 1 / TICK_RATE;
+// Velocidad de la física (1 = normal). Por debajo de 1 todo el juego va a cámara lenta:
+// coches, pelota, saltos y gravedad, manteniendo sus proporciones. Así da tiempo a controlar
+// la pelota en el aire (air dribbles). El reloj del partido sigue en tiempo real.
+export const GAME_SPEED = 0.55;
+export const SIM_DT = DT * GAME_SPEED;
 export const SNAPSHOT_EVERY = 2; // el servidor envía el estado cada 2 ticks (30 Hz)
 
 export const WIDTH = 1024;

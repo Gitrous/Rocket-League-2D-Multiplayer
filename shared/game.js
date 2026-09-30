@@ -1,7 +1,7 @@
 // Simulación de una partida. Se ejecuta igual en el servidor (online) y en el navegador (1 y 2 jugadores locales).
 import { World, Vec2, Chain, Circle, Polygon } from 'planck';
 import {
-  PPM, DT, WIDTH, ARENA, MATCH, BALL, CAR, CAR_TYPES,
+  PPM, DT, SIM_DT, WIDTH, ARENA, MATCH, BALL, CAR, CAR_TYPES,
   sanitizeLoadout, sanitizeInput, EMPTY_INPUT,
 } from './config.js';
 
@@ -192,7 +192,7 @@ export class Match {
       for (const car of this.cars) car.prevJump = this.inputs[car.slot].jump;
     }
 
-    this.world.step(DT, 8, 3);
+    this.world.step(SIM_DT, 8, 3);
     this._applyHits();
 
     if (this.ball) this._clampBall();
@@ -296,7 +296,7 @@ export class Match {
     car.prevJump = input.jump;
 
     car.grounded = this._isGrounded(car);
-    if (car.flipTime > 0) car.flipTime -= DT;
+    if (car.flipTime > 0) car.flipTime -= SIM_DT;
 
     if (car.grounded) {
       car.airTime = 0;
@@ -328,7 +328,7 @@ export class Match {
         this.events.push({ type: 'jump', slot: car.slot });
       }
     } else {
-      car.airTime += DT;
+      car.airTime += SIM_DT;
       // girar en el aire
       if (car.flipTime <= 0) {
         const target = input.h * t.airRot;
@@ -362,10 +362,10 @@ export class Match {
         const f = t.boostAccel * mass * dir;
         b.applyForceToCenter(Vec2(fwd.x * f, fwd.y * f), true);
       }
-      if (!this.infiniteBoost) car.boost = Math.max(0, car.boost - CAR.boostDrain * DT);
+      if (!this.infiniteBoost) car.boost = Math.max(0, car.boost - CAR.boostDrain * SIM_DT);
       car.boosting = true;
     } else {
-      car.boost = Math.min(100, car.boost + CAR.boostRegen * DT);
+      car.boost = Math.min(100, car.boost + CAR.boostRegen * SIM_DT);
     }
   }
 
