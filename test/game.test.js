@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Vec2 } from 'planck';
 import { Match } from '../shared/game.js';
+import { CAR_TYPES } from '../shared/config.js';
 import { Bot } from '../shared/ai.js';
 import { PPM, ARENA, MATCH, CAR, BALL, GAME_SPEED } from '../shared/config.js';
 
@@ -213,7 +214,7 @@ test('el doble salto no caduca aunque pases mucho tiempo en el aire', () => {
   assert.ok(events.some((e) => e.type === 'jump2' && e.slot === 0), 'el doble salto sigue disponible');
 });
 
-test('en el aire el giro cambia de sentido poco a poco, no de golpe', () => {
+test('en el aire el giro es directo: gira mientras mantienes y se para al soltar', () => {
   const match = readyMatch();
   const car = match.cars[0];
   const hold = (h, ticks) => {
@@ -226,11 +227,10 @@ test('en el aire el giro cambia de sentido poco a poco, no de golpe', () => {
     }
     return car.body.getAngularVelocity();
   };
-  const left = hold(-1, 60);
-  assert.ok(left < -3, 'gira a la izquierda');
-  const tap = hold(1, 6); // un toque corto a la derecha
-  assert.ok(tap < 0 && tap > left, `un toque solo frena el giro (${tap.toFixed(2)})`);
-  assert.ok(hold(1, 90) > 3, 'manteniendo acaba girando a la derecha');
+  const max = CAR_TYPES[1].airRot;
+  assert.ok(Math.abs(hold(-1, 30) + max) < max * 0.03, 'gira a la izquierda a tope');
+  assert.ok(Math.abs(hold(1, 1) - max) < max * 0.03, 'al pulsar derecha gira a la derecha al momento');
+  assert.ok(Math.abs(hold(0, 12)) < 0.1, 'al soltar deja de girar');
 });
 
 function airborne(match, x = 400, y = 150, angle = 0) {

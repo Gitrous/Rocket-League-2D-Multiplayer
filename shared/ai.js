@@ -90,11 +90,8 @@ export class Bot {
         this.pendingSecond = reachable && dy < -80 ? 14 : -1;
       }
     } else {
-      // en el aire: mantener el coche derecho. El giro es progresivo, así que se apunta a una
-      // velocidad de giro que disminuye al acercarse a recto (para no pasarse).
-      const w = car.body.getAngularVelocity();
-      const wantW = Math.max(-5, Math.min(5, -me.a * 3));
-      if (Math.abs(wantW - w) > 0.5) input.h = sign(wantW - w);
+      // en el aire: mantener el coche derecho (el giro es directo: se suelta al estar casi recto)
+      if (Math.abs(me.a) > 0.25) input.h = -sign(me.a);
       if (this.pendingSecond > 0 && --this.pendingSecond === 0) {
         input.h = Math.abs(dx) > 25 ? sign(dx) : 0;
         input.jump = true;

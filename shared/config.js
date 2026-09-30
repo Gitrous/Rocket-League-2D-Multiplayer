@@ -85,8 +85,7 @@ export const CAR = {
   flipSpin: 13,
   jumpLockTicks: 6,         // fotogramas tras saltar en los que se ignora el suelo
   dodgeBufferTicks: 5,      // fotogramas de margen para pulsar la dirección después del doble salto
-  airRotAccel: 2.4,         // aceleración del giro en el aire (× velocidad máx. de giro por segundo)
-  airRotDamping: 1.2,       // cuánto se frena el giro en el aire al soltar la dirección
+  airRotStop: 0.6,          // al soltar la dirección en el aire, el giro se multiplica por esto cada fotograma (se para en ~0,1 s)
   boostDrain: 34,           // por segundo
   boostRegen: 7,            // por segundo
   spawnX: 170,

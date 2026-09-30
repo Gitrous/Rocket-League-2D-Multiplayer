@@ -383,18 +383,11 @@ export class Match {
       }
     } else {
       car.airTime += SIM_DT;
-      // girar en el aire de forma progresiva: mantener la dirección acelera el giro poco a poco
-      // (un toque corto solo lo frena un poco) hasta la velocidad máxima del coche; al soltar,
-      // el giro se va apagando suave.
+      // girar en el aire de forma directa: mientras mantienes una dirección gira a su velocidad
+      // máxima hacia ese lado; al soltar deja de girar casi en seco (sin inercia).
       if (car.flipTime <= 0) {
-        const w = b.getAngularVelocity();
-        if (input.h !== 0) {
-          let nw = w + input.h * t.airRot * CAR.airRotAccel * SIM_DT;
-          if (input.h * nw > t.airRot) nw = input.h * Math.max(t.airRot, input.h * w); // no pasar del máximo
-          b.setAngularVelocity(nw);
-        } else {
-          b.setAngularVelocity(w * (1 - CAR.airRotDamping * SIM_DT));
-        }
+        if (input.h !== 0) b.setAngularVelocity(input.h * t.airRot);
+        else b.setAngularVelocity(b.getAngularVelocity() * CAR.airRotStop);
       }
       // apoyado en el techo o en un lateral (del revés): salta despegándose de la superficie y se endereza.
       // No gasta el doble salto.
