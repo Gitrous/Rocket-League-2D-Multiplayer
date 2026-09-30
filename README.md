@@ -16,7 +16,7 @@ Se puede jugar contra la IA, a dos en el mismo teclado u **online, cada uno desd
 | Acción | Jugador 1 (y online) | Jugador 2 (y online) |
 |---|---|---|
 | Mover / girar en el aire | A / D | ← / → |
-| Saltar (también del revés; el doble salto no caduca hasta tocar suelo; con dirección = voltereta) | W | ↑ |
+| Saltar (también del revés; con dirección = voltereta; el doble salto no caduca y se recarga al apoyar las dos ruedas en suelo, pared o techo) | W | ↑ |
 | Turbo | Espacio o Shift izq. | Enter, Shift der. o Numpad 0 |
 | Frenar | S | ↓ |
 | Salir de la partida | Esc | Esc |

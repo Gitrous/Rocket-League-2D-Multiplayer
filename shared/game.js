@@ -66,9 +66,9 @@ export class Match {
     this.cars = [0, 1].map((slot) => this._createCar(slot));
     this.ball = null;
     this._lastHitTick = [-99, -99];
+    this._lastTouchTick = [-99, -99];
     this._pendingHits = [];
 
-    this.world.on('begin-contact', (c) => this._onContact(c));
     this.world.on('pre-solve', (c) => this._onPreSolve(c));
     this._startKickoff();
   }
@@ -106,6 +106,8 @@ export class Match {
       airTime: 0,
       usedSecondJump: false,
       flipTime: 0,
+      jumpLock: 0,
+      dodgeWait: 0,
     };
   }
 
@@ -135,6 +137,8 @@ export class Match {
       car.usedSecondJump = false;
       car.flipTime = 0;
       car.airTime = 0;
+      car.jumpLock = 0;
+      car.dodgeWait = 0;
     }
   }
 
@@ -265,13 +269,15 @@ export class Match {
     }
   }
 
-  _isGrounded(car) {
+  // Cuántas ruedas (0, 1 o 2) están apoyadas en una superficie: suelo, pared, techo u otro coche.
+  _wheelsDown(car) {
     const b = car.body;
     const down = b.getWorldVector(Vec2(0, 1));
-    let hit = false;
+    let count = 0;
     for (const sx of [-CAR.wheelOffsetX, CAR.wheelOffsetX]) {
       const from = b.getWorldPoint(Vec2(m(sx), m(CAR.wheelOffsetY)));
       const to = Vec2(from.x + down.x * m(CAR.groundRay), from.y + down.y * m(CAR.groundRay));
+      let hit = false;
       this.world.rayCast(from, to, (fixture, point, normal, fraction) => {
         const body = fixture.getBody();
         if (body === b) return -1;
@@ -280,9 +286,9 @@ export class Match {
         hit = true;
         return fraction;
       });
-      if (hit) return true;
+      if (hit) count++;
     }
-    return false;
+    return count;
   }
 
   // Si el coche toca el estadio (suelo, paredes, techo) con cualquier parte y no con las ruedas,
@@ -307,6 +313,24 @@ export class Match {
     return len > 0.01 ? { x: nx / len, y: ny / len } : null;
   }
 
+  // Doble salto (h = 0) o voltereta hacia h. La voltereta anula la velocidad de caída para que salga
+  // siempre igual de fuerte, como en Rocket League.
+  _dodge(car, h, up) {
+    const b = car.body;
+    const mass = b.getMass();
+    const vv = b.getLinearVelocity();
+    b.setLinearVelocity(Vec2(vv.x, Math.min(vv.y, 0)));
+    if (h !== 0) {
+      b.applyLinearImpulse(Vec2(h * CAR.flipImpulse * mass, -2.5 * mass), b.getWorldCenter(), true);
+      b.setAngularVelocity(h * CAR.flipSpin);
+      car.flipTime = 0.45;
+      this.events.push({ type: 'flip', slot: car.slot });
+    } else {
+      b.applyLinearImpulse(Vec2(up.x * CAR.secondJump * mass, up.y * CAR.secondJump * mass), b.getWorldCenter(), true);
+      this.events.push({ type: 'jump2', slot: car.slot });
+    }
+  }
+
   _driveCar(car, input) {
     const b = car.body;
     const mass = b.getMass();
@@ -318,12 +342,18 @@ export class Match {
     const jumpPressed = input.jump && !car.prevJump;
     car.prevJump = input.jump;
 
-    car.grounded = this._isGrounded(car);
+    // justo después de saltar se ignora el suelo unos instantes: si no, pulsar rápido el segundo
+    // salto contaba como otro salto desde el suelo en vez de doble salto
+    if (car.jumpLock > 0) car.jumpLock--;
+    const wheels = car.jumpLock > 0 ? 0 : this._wheelsDown(car);
+    car.grounded = wheels > 0;
     if (car.flipTime > 0) car.flipTime -= SIM_DT;
+    // las dos ruedas apoyadas (suelo, pared o techo) recargan el doble salto
+    if (wheels === 2) car.usedSecondJump = false;
 
     if (car.grounded) {
       car.airTime = 0;
-      car.usedSecondJump = false;
+      car.dodgeWait = 0;
 
       if (Math.abs(vf) > 0.8) car.facing = sign(vf);
       else if (input.h !== 0) car.facing = input.h;
@@ -348,6 +378,7 @@ export class Match {
       if (jumpPressed) {
         b.applyLinearImpulse(Vec2(up.x * t.jump * mass, up.y * t.jump * mass), b.getWorldCenter(), true);
         car.airTime = 0.0001;
+        car.jumpLock = CAR.jumpLockTicks;
         this.events.push({ type: 'jump', slot: car.slot });
       }
     } else {
@@ -373,21 +404,22 @@ export class Match {
         const tilt = normalizeAngle(b.getAngle());
         b.setAngularVelocity((input.h !== 0 ? input.h : -sign(tilt) || 1) * CAR.flipSpin * 0.55);
         car.airTime = 0.0001;
-        car.usedSecondJump = false;
+        car.jumpLock = CAR.jumpLockTicks;
         this.events.push({ type: 'jump', slot: car.slot });
       // doble salto / voltereta: disponible hasta que lo uses o vuelvas a tocar el suelo (no caduca)
       } else if (jumpPressed && !car.usedSecondJump) {
         car.usedSecondJump = true;
+        // si aún no hay dirección pulsada, espera unos fotogramas por si llega (pulsar salto un
+        // pelín antes que la dirección ya no convierte la voltereta en un doble salto recto)
+        car.dodgeWait = input.h !== 0 ? 0 : CAR.dodgeBufferTicks;
+        if (input.h !== 0) this._dodge(car, input.h, up);
+      } else if (car.dodgeWait > 0) {
+        car.dodgeWait--;
         if (input.h !== 0) {
-          b.applyLinearImpulse(Vec2(input.h * CAR.flipImpulse * mass, -2.5 * mass), b.getWorldCenter(), true);
-          b.setAngularVelocity(input.h * CAR.flipSpin);
-          car.flipTime = 0.45;
-          this.events.push({ type: 'flip', slot: car.slot });
-        } else {
-          const vv = b.getLinearVelocity();
-          b.setLinearVelocity(Vec2(vv.x, Math.min(vv.y, 0)));
-          b.applyLinearImpulse(Vec2(up.x * CAR.secondJump * mass, up.y * CAR.secondJump * mass), b.getWorldCenter(), true);
-          this.events.push({ type: 'jump2', slot: car.slot });
+          car.dodgeWait = 0;
+          this._dodge(car, input.h, up);
+        } else if (car.dodgeWait === 0) {
+          this._dodge(car, 0, up);
         }
       }
     }
@@ -454,7 +486,10 @@ export class Match {
     this.events.push({ type: 'end', winner: this.winner, score: [...this.score] });
   }
 
-  _onContact(contact) {
+  // Se comprueba en cada fotograma de contacto coche-pelota (no solo al empezar a tocarse): así un
+  // golpe con la pelota ya apoyada encima (musty, flicks) también cuenta. Se mide antes de que la
+  // física resuelva el choque; el impulso extra se aplica justo después del paso de física.
+  _checkHit(contact) {
     const a = contact.getFixtureA().getBody();
     const b = contact.getFixtureB().getBody();
     const ka = a.getUserData()?.kind;
@@ -462,49 +497,73 @@ export class Match {
     if (!((ka === 'ball' && kb === 'car') || (ka === 'car' && kb === 'ball'))) return;
     const car = ka === 'car' ? a : b;
     const slot = car.getUserData().slot;
-    if (this.tick - this._lastHitTick[slot] < 6) return;
-    this._lastHitTick[slot] = this.tick;
-    // la velocidad de choque se mide ahora, antes de que la física resuelva el contacto;
-    // el impulso no se puede aplicar durante el paso de física, así que se aplica justo después
+    if (this.tick - this._lastHitTick[slot] < 6) {
+      contact.lastTouchTick = this.tick;
+      return;
+    }
+    // velocidad del punto del coche que toca la pelota: incluye su giro
     const ball = ka === 'ball' ? a : b;
-    const cp = car.getPosition();
+    const wm = contact.getWorldManifold(null);
+    const point = wm && wm.pointCount > 0 ? wm.points[0] : ball.getPosition();
     const bp = ball.getPosition();
-    const d = Math.hypot(bp.x - cp.x, bp.y - cp.y) || 1;
-    const vc = car.getLinearVelocity();
+    let nx = bp.x - point.x;
+    let ny = bp.y - point.y;
+    let d = Math.hypot(nx, ny);
+    if (d < 1e-4) { const cp = car.getPosition(); nx = bp.x - cp.x; ny = bp.y - cp.y; d = Math.hypot(nx, ny) || 1; }
+    nx /= d; ny /= d;
+    // Si ya estaban en contacto el fotograma anterior (pelota apoyada encima), solo cuenta el giro del
+    // coche: así se puede saltar y moverse llevándola sin que salga disparada, y una voltereta la lanza.
+    const resting = contact.lastTouchTick === this.tick - 1;
+    contact.lastTouchTick = this.tick;
+    const vc = car.getLinearVelocityFromWorldPoint(point);
     const vb = ball.getLinearVelocity();
-    const closing = Math.max(0, ((vc.x - vb.x) * (bp.x - cp.x) + (vc.y - vb.y) * (bp.y - cp.y)) / d);
-    this._pendingHits.push({ car, slot, closing });
+    let rvx = vc.x - vb.x;
+    let rvy = vc.y - vb.y;
+    if (resting) {
+      const lv = car.getLinearVelocity();
+      rvx = vc.x - lv.x; // parte de la velocidad debida solo al giro
+      rvy = vc.y - lv.y;
+    }
+    const closing = Math.max(0, rvx * nx + rvy * ny);
+    if (closing < BALL.hitMinSpeed) {
+      // roce suave (por ejemplo, llevándola encima): solo suena, y no bloquea un golpe fuerte justo después
+      if (closing > 1 && this.tick - this._lastTouchTick[slot] >= 12) {
+        this._lastTouchTick[slot] = this.tick;
+        this.events.push({ type: 'hit', slot, power: closing / 12 });
+      }
+      return;
+    }
+    this._lastHitTick[slot] = this.tick;
+    this._pendingHits.push({ car, slot, closing, nx, ny });
   }
 
   // La pelota apenas rebota contra los coches (sí contra el estadio), para poder controlarla encima.
   _onPreSolve(contact) {
     const ka = contact.getFixtureA().getBody().getUserData()?.kind;
     const kb = contact.getFixtureB().getBody().getUserData()?.kind;
-    if ((ka === 'ball' && kb === 'car') || (ka === 'car' && kb === 'ball')) contact.setRestitution(BALL.carRestitution);
+    if ((ka === 'ball' && kb === 'car') || (ka === 'car' && kb === 'ball')) {
+      contact.setRestitution(BALL.carRestitution);
+      this._checkHit(contact);
+    }
   }
 
   // Golpe "con chispa": además del choque físico, empuja la pelota desde el coche y un poco hacia arriba.
   _applyHits() {
     const hits = this._pendingHits;
     this._pendingHits = [];
-    for (const { car, slot, closing } of hits) {
+    for (const { car, slot, closing, nx, ny } of hits) {
       const ball = this.ball;
       if (!ball) continue;
-      const cp = car.getPosition();
-      const bp = ball.getPosition();
-      let dx = bp.x - cp.x;
-      let dy = bp.y - cp.y;
-      let d = Math.hypot(dx, dy) || 1;
-      dx /= d; dy /= d;
-      dy -= BALL.hitLift;
+      // sale empujada desde el punto de contacto, con un poco de sesgo hacia arriba
+      let dx = nx;
+      let dy = ny - BALL.hitLift;
+      let d;
       d = Math.hypot(dx, dy) || 1;
       dx /= d; dy /= d;
-      if (closing >= BALL.hitMinSpeed) {
-        const dv = Math.min(BALL.hitMax, BALL.hitBase + (closing - BALL.hitMinSpeed) * BALL.hitScale);
-        const imp = dv * ball.getMass();
-        ball.applyLinearImpulse(Vec2(dx * imp, dy * imp), ball.getWorldCenter(), true);
-      }
-      if (closing > 1) this.events.push({ type: 'hit', slot, power: Math.min(1, closing / 12) });
+      const dv = Math.min(BALL.hitMax, BALL.hitBase + (closing - BALL.hitMinSpeed) * BALL.hitScale);
+      const imp = dv * ball.getMass();
+      ball.applyLinearImpulse(Vec2(dx * imp, dy * imp), ball.getWorldCenter(), true);
+      this.events.push({ type: 'hit', slot, power: Math.min(1, closing / 12) });
     }
   }
 

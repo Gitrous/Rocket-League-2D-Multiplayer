@@ -209,7 +209,7 @@ test('el doble salto no caduca aunque pases mucho tiempo en el aire', () => {
     match.drainEvents();
   }
   assert.equal(car.grounded, false);
-  const events = run(match, 4, (_, i) => [{ jump: i < 2 }, {}]);
+  const events = run(match, 10, (_, i) => [{ jump: i < 2 }, {}]); // espera el margen para la dirección
   assert.ok(events.some((e) => e.type === 'jump2' && e.slot === 0), 'el doble salto sigue disponible');
 });
 
@@ -231,4 +231,61 @@ test('en el aire el giro cambia de sentido poco a poco, no de golpe', () => {
   const tap = hold(1, 6); // un toque corto a la derecha
   assert.ok(tap < 0 && tap > left, `un toque solo frena el giro (${tap.toFixed(2)})`);
   assert.ok(hold(1, 90) > 3, 'manteniendo acaba girando a la derecha');
+});
+
+function airborne(match, x = 400, y = 150, angle = 0) {
+  const car = match.cars[0];
+  car.body.setTransform(Vec2(x / PPM, y / PPM), angle);
+  car.body.setLinearVelocity(Vec2(0, 0));
+  car.body.setAngularVelocity(0);
+  car.usedSecondJump = false;
+  run(match, 2);
+  return car;
+}
+
+test('pulsar la dirección justo después del salto sigue haciendo voltereta', () => {
+  const match = readyMatch();
+  airborne(match);
+  // salto en el fotograma 0, dirección 3 fotogramas después
+  const events = run(match, 10, (_, i) => [{ jump: i < 2, h: i >= 3 ? 1 : 0 }, {}]);
+  assert.ok(events.some((e) => e.type === 'flip'), 'debe ser voltereta');
+  assert.ok(!events.some((e) => e.type === 'jump2'), 'no debe ser doble salto recto');
+});
+
+test('pulsar el segundo salto muy rápido hace doble salto, no otro salto desde el suelo', () => {
+  const match = readyMatch();
+  const events = run(match, 12, (_, i) => [{ jump: i < 2 || (i >= 4 && i < 6), h: i >= 4 ? 1 : 0 }, {}]);
+  assert.equal(events.filter((e) => e.type === 'jump').length, 1, 'un solo salto desde el suelo');
+  assert.ok(events.some((e) => e.type === 'flip'), 'el segundo es la voltereta');
+});
+
+test('la voltereta sale igual de fuerte aunque el coche esté cayendo', () => {
+  const match = readyMatch();
+  const car = airborne(match);
+  car.body.setLinearVelocity(Vec2(0, 8)); // cayendo rápido
+  run(match, 3, (_, i) => [{ jump: i < 2, h: 1 }, {}]);
+  assert.ok(car.body.getLinearVelocity().y < 0.5, 'la caída se anula al hacer la voltereta');
+});
+
+test('apoyar las dos ruedas en la pared recarga el doble salto', () => {
+  const match = readyMatch();
+  // coche pegado a la pared izquierda con las ruedas contra ella, a media altura
+  const car = airborne(match, ARENA.leftWallX + 14, 150, Math.PI / 2);
+  car.usedSecondJump = true;
+  run(match, 3);
+  assert.equal(car.usedSecondJump, false, 'con las dos ruedas en la pared se recarga');
+});
+
+test('una voltereta con la pelota encima la lanza (musty / flick)', () => {
+  const match = readyMatch();
+  const car = airborne(match, 400, 200, 0);
+  // pelota apoyada sobre el morro/techo
+  match.ball.setTransform(Vec2(412 / PPM, (200 - 14 - BALL.radius - 1) / PPM), 0);
+  match.ball.setLinearVelocity(Vec2(0, 0));
+  run(match, 1);
+  const v0 = { ...match.ball.getLinearVelocity() }; // copia: planck reutiliza el objeto
+  run(match, 20, (_, i) => [{ jump: i < 2, h: -1 }, {}]); // voltereta hacia atrás
+  const v1 = { ...match.ball.getLinearVelocity() };
+  const gained = Math.hypot(v1.x - v0.x, v1.y - v0.y);
+  assert.ok(gained > 4, `la pelota solo ganó ${gained.toFixed(1)} m/s`);
 });
