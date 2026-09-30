@@ -37,14 +37,17 @@ export const MATCH = {
 export const BALL = {
   radius: 32,
   density: 0.1,        // con el doble de radio pesa ~2 veces más que antes (0,31 kg frente a 0,16)
-  restitution: 0.62,
+  restitution: 0.4,    // rebote contra suelo, paredes y techo
+  carRestitution: 0.08, // rebote contra los coches: casi nada, para poder llevarla encima (air dribble)
   friction: 0.3,
   linearDamping: 0.06,
   gravityScale: 0.8,   // cae algo más despacio que los coches, sin llegar a flotar
   angularDamping: 0.3,
   maxSpeed: 26,        // m/s
   // impulso extra al tocarla con el coche: base + parte de la velocidad de choque, con sesgo hacia arriba
-  hitBase: 1.6,
+  // los toques suaves (por debajo de hitMinSpeed m/s) no reciben impulso extra: así no bota sobre el coche
+  hitMinSpeed: 3,
+  hitBase: 0.8,
   hitScale: 0.45,
   hitMax: 8,
   hitLift: 0.35,

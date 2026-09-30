@@ -106,19 +106,47 @@ function readyMatch() {
   return match;
 }
 
-test('un salto debajo de la pelota la levanta alto (para aéreas)', () => {
+test('un choque a toda velocidad levanta la pelota del suelo', () => {
   const match = readyMatch();
-  const cx = match.cars[0].body.getPosition().x * PPM;
-  match.ball.setTransform(Vec2((cx + 8) / PPM, 200 / PPM), 0);
+  match.ball.setTransform(Vec2(520 / PPM, (ARENA.floorY - BALL.radius) / PPM), 0);
   let top = 999;
-  for (let i = 0; i < 200; i++) {
-    const by = match.ball.getPosition().y * PPM;
-    match.setInput(0, { jump: by > 290 && i < 100 });
+  for (let i = 0; i < 440; i++) {
+    match.setInput(0, { h: 1, boost: true });
     match.step();
     match.drainEvents();
-    if (i > 40) top = Math.min(top, match.ball.getPosition().y * PPM);
+    if (match.ball) top = Math.min(top, match.ball.getPosition().y * PPM);
   }
-  assert.ok(ARENA.floorY - top > 220, `la pelota solo subió ${Math.round(ARENA.floorY - top)} px`);
+  const h = ARENA.floorY - BALL.radius - top;
+  assert.ok(h > 120, `la pelota solo subió ${Math.round(h)} px`);
+});
+
+test('la pelota no rebota demasiado contra el suelo', () => {
+  const match = readyMatch();
+  match.cars[0].body.setTransform(Vec2(200 / PPM, 330 / PPM), 0);
+  match.ball.setTransform(Vec2(512 / PPM, (ARENA.floorY - BALL.radius - 200) / PPM), 0);
+  const apex = [];
+  let prevVy = 0;
+  for (let i = 0; i < 60 * 12; i++) {
+    match.step();
+    const vy = match.ball.getLinearVelocity().y;
+    if (prevVy < 0 && vy >= 0) apex.push(ARENA.floorY - BALL.radius - match.ball.getPosition().y * PPM);
+    prevVy = vy;
+  }
+  assert.ok(apex[0] < 60, `desde 200 px rebotó hasta ${Math.round(apex[0])} px`);
+});
+
+test('la pelota se queda quieta encima del coche (air dribble)', () => {
+  const match = readyMatch();
+  const c = match.cars[0].body.getPosition();
+  match.ball.setTransform(Vec2(c.x, (c.y * PPM - 14 - BALL.radius - 2) / PPM), 0);
+  let maxGap = 0;
+  for (let i = 0; i < 120; i++) {
+    match.step();
+    match.drainEvents();
+    const gap = (match.cars[0].body.getPosition().y * PPM - 14) - (match.ball.getPosition().y * PPM + BALL.radius);
+    maxGap = Math.max(maxGap, gap);
+  }
+  assert.ok(maxGap < 5, `la pelota botó ${Math.round(maxGap)} px sobre el techo`);
 });
 
 test('en cámara lenta todo va más despacio que a velocidad normal', () => {

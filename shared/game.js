@@ -69,6 +69,7 @@ export class Match {
     this._pendingHits = [];
 
     this.world.on('begin-contact', (c) => this._onContact(c));
+    this.world.on('pre-solve', (c) => this._onPreSolve(c));
     this._startKickoff();
   }
 
@@ -424,15 +425,30 @@ export class Match {
     const slot = car.getUserData().slot;
     if (this.tick - this._lastHitTick[slot] < 6) return;
     this._lastHitTick[slot] = this.tick;
-    // no se pueden aplicar impulsos durante el paso de física: se aplican justo después
-    this._pendingHits.push({ car, slot });
+    // la velocidad de choque se mide ahora, antes de que la física resuelva el contacto;
+    // el impulso no se puede aplicar durante el paso de física, así que se aplica justo después
+    const ball = ka === 'ball' ? a : b;
+    const cp = car.getPosition();
+    const bp = ball.getPosition();
+    const d = Math.hypot(bp.x - cp.x, bp.y - cp.y) || 1;
+    const vc = car.getLinearVelocity();
+    const vb = ball.getLinearVelocity();
+    const closing = Math.max(0, ((vc.x - vb.x) * (bp.x - cp.x) + (vc.y - vb.y) * (bp.y - cp.y)) / d);
+    this._pendingHits.push({ car, slot, closing });
+  }
+
+  // La pelota apenas rebota contra los coches (sí contra el estadio), para poder controlarla encima.
+  _onPreSolve(contact) {
+    const ka = contact.getFixtureA().getBody().getUserData()?.kind;
+    const kb = contact.getFixtureB().getBody().getUserData()?.kind;
+    if ((ka === 'ball' && kb === 'car') || (ka === 'car' && kb === 'ball')) contact.setRestitution(BALL.carRestitution);
   }
 
   // Golpe "con chispa": además del choque físico, empuja la pelota desde el coche y un poco hacia arriba.
   _applyHits() {
     const hits = this._pendingHits;
     this._pendingHits = [];
-    for (const { car, slot } of hits) {
+    for (const { car, slot, closing } of hits) {
       const ball = this.ball;
       if (!ball) continue;
       const cp = car.getPosition();
@@ -441,16 +457,15 @@ export class Match {
       let dy = bp.y - cp.y;
       let d = Math.hypot(dx, dy) || 1;
       dx /= d; dy /= d;
-      const vc = car.getLinearVelocity();
-      const vb = ball.getLinearVelocity();
-      const closing = Math.max(0, (vc.x - vb.x) * dx + (vc.y - vb.y) * dy);
       dy -= BALL.hitLift;
       d = Math.hypot(dx, dy) || 1;
       dx /= d; dy /= d;
-      const dv = Math.min(BALL.hitMax, BALL.hitBase + closing * BALL.hitScale);
-      const imp = dv * ball.getMass();
-      ball.applyLinearImpulse(Vec2(dx * imp, dy * imp), ball.getWorldCenter(), true);
-      this.events.push({ type: 'hit', slot, power: Math.min(1, closing / 12) });
+      if (closing >= BALL.hitMinSpeed) {
+        const dv = Math.min(BALL.hitMax, BALL.hitBase + (closing - BALL.hitMinSpeed) * BALL.hitScale);
+        const imp = dv * ball.getMass();
+        ball.applyLinearImpulse(Vec2(dx * imp, dy * imp), ball.getWorldCenter(), true);
+      }
+      if (closing > 1) this.events.push({ type: 'hit', slot, power: Math.min(1, closing / 12) });
     }
   }
 
