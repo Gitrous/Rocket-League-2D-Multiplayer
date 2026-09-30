@@ -212,3 +212,23 @@ test('el doble salto no caduca aunque pases mucho tiempo en el aire', () => {
   const events = run(match, 4, (_, i) => [{ jump: i < 2 }, {}]);
   assert.ok(events.some((e) => e.type === 'jump2' && e.slot === 0), 'el doble salto sigue disponible');
 });
+
+test('en el aire el giro cambia de sentido poco a poco, no de golpe', () => {
+  const match = readyMatch();
+  const car = match.cars[0];
+  const hold = (h, ticks) => {
+    for (let i = 0; i < ticks; i++) {
+      car.body.setTransform(Vec2(400 / PPM, 150 / PPM), car.body.getAngle());
+      car.body.setLinearVelocity(Vec2(0, 0));
+      match.setInput(0, { h });
+      match.step();
+      match.drainEvents();
+    }
+    return car.body.getAngularVelocity();
+  };
+  const left = hold(-1, 60);
+  assert.ok(left < -3, 'gira a la izquierda');
+  const tap = hold(1, 6); // un toque corto a la derecha
+  assert.ok(tap < 0 && tap > left, `un toque solo frena el giro (${tap.toFixed(2)})`);
+  assert.ok(hold(1, 90) > 3, 'manteniendo acaba girando a la derecha');
+});

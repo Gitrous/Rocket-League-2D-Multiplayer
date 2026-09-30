@@ -43,10 +43,12 @@ export class Bot {
     const predX = b.x + b.vx * 0.35;
 
     // --- recuperarse si está volcado ---
-    const upsideDown = Math.abs(me.a) > 2.2;
-    if (car.grounded && upsideDown) this.stuckTime += 1;
+    // (del revés y apoyado en el estadio: salta para despegarse y enderezarse)
+    const upsideDown = Math.abs(me.a) > 1.6;
+    const stuck = !car.grounded && upsideDown && Math.hypot(car.body.getLinearVelocity().x, car.body.getLinearVelocity().y) < 1.5;
+    if (stuck) this.stuckTime += 1;
     else this.stuckTime = 0;
-    if (this.stuckTime > 20) {
+    if (this.stuckTime > 15) {
       input.jump = this.jumpHold++ % 20 < 6;
       input.h = -sign(me.a) || 1;
       return input;
@@ -88,8 +90,11 @@ export class Bot {
         this.pendingSecond = reachable && dy < -80 ? 14 : -1;
       }
     } else {
-      // en el aire: mantener el coche derecho
-      if (Math.abs(me.a) > 0.35) input.h = -sign(me.a);
+      // en el aire: mantener el coche derecho. El giro es progresivo, así que se apunta a una
+      // velocidad de giro que disminuye al acercarse a recto (para no pasarse).
+      const w = car.body.getAngularVelocity();
+      const wantW = Math.max(-5, Math.min(5, -me.a * 3));
+      if (Math.abs(wantW - w) > 0.5) input.h = sign(wantW - w);
       if (this.pendingSecond > 0 && --this.pendingSecond === 0) {
         input.h = Math.abs(dx) > 25 ? sign(dx) : 0;
         input.jump = true;

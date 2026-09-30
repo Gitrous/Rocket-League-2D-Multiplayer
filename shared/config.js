@@ -83,6 +83,8 @@ export const CAR = {
   secondJump: 6.2,
   flipImpulse: 6.5,
   flipSpin: 13,
+  airRotAccel: 2.4,         // aceleración del giro en el aire (× velocidad máx. de giro por segundo)
+  airRotDamping: 1.2,       // cuánto se frena el giro en el aire al soltar la dirección
   boostDrain: 34,           // por segundo
   boostRegen: 7,            // por segundo
   spawnX: 170,
