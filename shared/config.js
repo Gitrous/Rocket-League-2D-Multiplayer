@@ -57,9 +57,9 @@ export const BALL = {
 
 // Tipos de coche: cambian el comportamiento físico, no el aspecto.
 export const CAR_TYPES = [
-  { id: 'agil',        name: 'Ágil',        density: 0.8, maxSpeed: 9.5, accel: 20, airRot: 7.8, jump: 8.4, boostAccel: 35 },
-  { id: 'equilibrado', name: 'Equilibrado', density: 1.0, maxSpeed: 9.0, accel: 18, airRot: 6.5, jump: 8.0, boostAccel: 34 },
-  { id: 'pesado',      name: 'Pesado',      density: 1.4, maxSpeed: 8.3, accel: 16, airRot: 5.3, jump: 7.6, boostAccel: 32 },
+  { id: 'agil',        name: 'Ágil',        density: 0.8, maxSpeed: 9.5, accel: 20, airRot: 9.4, jump: 8.4, boostAccel: 35 },
+  { id: 'equilibrado', name: 'Equilibrado', density: 1.0, maxSpeed: 9.0, accel: 18, airRot: 7.8, jump: 8.0, boostAccel: 34 },
+  { id: 'pesado',      name: 'Pesado',      density: 1.4, maxSpeed: 8.3, accel: 16, airRot: 6.4, jump: 7.6, boostAccel: 32 },
 ];
 
 export const CAR = {
