@@ -1,7 +1,7 @@
 // Simulación de una partida. Se ejecuta igual en el servidor (online) y en el navegador (1 y 2 jugadores locales).
 import { World, Vec2, Chain, Circle, Polygon } from 'planck';
 import {
-  PPM, DT, SIM_DT, WIDTH, ARENA, MATCH, BALL, CAR, CAR_TYPES,
+  PPM, DT, SIM_DT, GRAVITY, WIDTH, ARENA, MATCH, BALL, CAR, CAR_TYPES,
   sanitizeLoadout, sanitizeInput, EMPTY_INPUT,
 } from './config.js';
 
@@ -53,7 +53,7 @@ export class Match {
     this.duration = opts.duration ?? MATCH.duration;
     this.infiniteBoost = opts.infiniteBoost !== false; // turbo infinito salvo que se desactive
 
-    this.world = new World({ gravity: Vec2(0, 20) });
+    this.world = new World({ gravity: Vec2(0, GRAVITY) });
     this.tick = 0;
     this.events = [];
     this.score = [0, 0];

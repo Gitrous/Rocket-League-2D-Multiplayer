@@ -9,6 +9,8 @@ export const DT = 1 / TICK_RATE;
 // la pelota en el aire (air dribbles). El reloj del partido sigue en tiempo real.
 export const GAME_SPEED = 0.55;
 export const SIM_DT = DT * GAME_SPEED;
+// Gravedad del juego en m/s² (afecta a coches y pelota; la pelota además usa BALL.gravityScale)
+export const GRAVITY = 16;
 export const SNAPSHOT_EVERY = 2; // el servidor envía el estado cada 2 ticks (30 Hz)
 
 export const WIDTH = 1024;
