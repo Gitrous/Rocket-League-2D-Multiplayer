@@ -230,7 +230,7 @@ test('en el aire el giro es directo: gira mientras mantienes y se para al soltar
   const max = CAR_TYPES[1].airRot;
   assert.ok(Math.abs(hold(-1, 30) + max) < max * 0.03, 'gira a la izquierda a tope');
   assert.ok(Math.abs(hold(1, 1) - max) < max * 0.03, 'al pulsar derecha gira a la derecha al momento');
-  assert.ok(Math.abs(hold(0, 12)) < 0.1, 'al soltar deja de girar');
+  assert.ok(Math.abs(hold(0, 1)) < 0.01, 'al soltar deja de girar en seco');
 });
 
 function airborne(match, x = 400, y = 150, angle = 0) {
