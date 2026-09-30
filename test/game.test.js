@@ -183,3 +183,32 @@ test('la hitbox apoya las ruedas en el suelo sin hundirse', () => {
   assert.ok(Math.abs(bottom - ARENA.floorY) < 1.5, `borde inferior a ${bottom} (suelo ${ARENA.floorY})`);
   assert.equal(car.g, 1);
 });
+
+test('el coche puede saltar aunque esté del revés en el suelo', () => {
+  const match = readyMatch();
+  const car = match.cars[0];
+  car.body.setTransform(Vec2(300 / PPM, (ARENA.floorY - 15) / PPM), Math.PI); // ruedas hacia arriba
+  run(match, 40); // que se asiente
+  assert.equal(car.grounded, false, 'del revés las ruedas no tocan el suelo');
+  const y0 = car.body.getPosition().y * PPM;
+  const events = run(match, 40, (_, i) => [{ jump: i < 3 }, {}]);
+  assert.ok(events.some((e) => e.type === 'jump' && e.slot === 0), 'debe saltar');
+  assert.ok(car.body.getPosition().y * PPM < y0 - 20, 'debe despegarse del suelo');
+  assert.equal(car.usedSecondJump, false, 'no gasta el doble salto');
+});
+
+test('el doble salto no caduca aunque pases mucho tiempo en el aire', () => {
+  const match = readyMatch();
+  const car = match.cars[0];
+  run(match, 6, (_, i) => [{ jump: i < 3 }, {}]); // primer salto
+  // lo mantenemos en el aire varios segundos (sin tocar nada)
+  for (let i = 0; i < 60 * 4; i++) {
+    car.body.setTransform(Vec2(400 / PPM, 150 / PPM), 0);
+    car.body.setLinearVelocity(Vec2(0, 0));
+    match.step();
+    match.drainEvents();
+  }
+  assert.equal(car.grounded, false);
+  const events = run(match, 4, (_, i) => [{ jump: i < 2 }, {}]);
+  assert.ok(events.some((e) => e.type === 'jump2' && e.slot === 0), 'el doble salto sigue disponible');
+});

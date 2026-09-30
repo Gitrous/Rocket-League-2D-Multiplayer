@@ -36,7 +36,7 @@ export const MATCH = {
 
 export const BALL = {
   radius: 32,
-  density: 0.1,        // con el doble de radio pesa ~2 veces más que antes (0,31 kg frente a 0,16)
+  density: 0.085,      // ~0,27 kg
   restitution: 0.4,    // rebote contra suelo, paredes y techo
   carRestitution: 0.08, // rebote contra los coches: casi nada, para poder llevarla encima (air dribble)
   friction: 0.3,
@@ -81,7 +81,6 @@ export const CAR = {
   secondJump: 6.2,
   flipImpulse: 6.5,
   flipSpin: 13,
-  secondJumpWindow: 1.4,    // segundos tras despegar para el doble salto
   boostDrain: 34,           // por segundo
   boostRegen: 7,            // por segundo
   spawnX: 170,

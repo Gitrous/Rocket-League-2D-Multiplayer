@@ -285,6 +285,28 @@ export class Match {
     return false;
   }
 
+  // Si el coche toca el estadio (suelo, paredes, techo) con cualquier parte y no con las ruedas,
+  // devuelve la dirección para despegarse de esa superficie; si no toca nada, null.
+  // Rozar al otro coche en el aire no cuenta, para que no dé saltos extra.
+  _surfaceNormal(car) {
+    let nx = 0;
+    let ny = 0;
+    for (let ce = car.body.getContactList(); ce; ce = ce.next) {
+      const c = ce.contact;
+      if (!c.isTouching()) continue;
+      const kind = ce.other.getUserData()?.kind;
+      if (kind !== 'arena') continue;
+      const wm = c.getWorldManifold(null);
+      if (!wm) continue;
+      // la normal va de la figura A a la B: si el coche es A, hay que invertirla para alejarse
+      const s = c.getFixtureA().getBody() === car.body ? -1 : 1;
+      nx += wm.normal.x * s;
+      ny += wm.normal.y * s;
+    }
+    const len = Math.hypot(nx, ny);
+    return len > 0.01 ? { x: nx / len, y: ny / len } : null;
+  }
+
   _driveCar(car, input) {
     const b = car.body;
     const mass = b.getMass();
@@ -336,8 +358,18 @@ export class Match {
         const w = b.getAngularVelocity();
         if (input.h !== 0) b.setAngularVelocity(w + (target - w) * 0.18);
       }
-      // doble salto / voltereta
-      if (jumpPressed && !car.usedSecondJump && car.airTime < CAR.secondJumpWindow) {
+      // apoyado en el techo o en un lateral (del revés): salta despegándose de la superficie y se endereza.
+      // No gasta el doble salto.
+      const away = jumpPressed ? this._surfaceNormal(car) : null;
+      if (away) {
+        b.applyLinearImpulse(Vec2(away.x * t.jump * mass, away.y * t.jump * mass), b.getWorldCenter(), true);
+        const tilt = normalizeAngle(b.getAngle());
+        b.setAngularVelocity((input.h !== 0 ? input.h : -sign(tilt) || 1) * CAR.flipSpin * 0.55);
+        car.airTime = 0.0001;
+        car.usedSecondJump = false;
+        this.events.push({ type: 'jump', slot: car.slot });
+      // doble salto / voltereta: disponible hasta que lo uses o vuelvas a tocar el suelo (no caduca)
+      } else if (jumpPressed && !car.usedSecondJump) {
         car.usedSecondJump = true;
         if (input.h !== 0) {
           b.applyLinearImpulse(Vec2(input.h * CAR.flipImpulse * mass, -2.5 * mass), b.getWorldCenter(), true);
